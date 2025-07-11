@@ -18,7 +18,7 @@ MONGO_URI = 'mongodb://localhost:27017/'
 MONGO_DB = 'weather_db'
 
 # --- LOAD CSV ---
-df = pd.read_csv(CSV_PATH, nrows=1000)
+df = pd.read_csv(CSV_PATH, nrows=200)
 
 # --- POSTGRESQL IMPORT ---
 def import_to_postgres(df):
@@ -44,13 +44,29 @@ def import_to_postgres(df):
             row['Date'],
             row.get('MinTemp'),
             row.get('MaxTemp'),
-            row.get('Rainfall')
+            row.get('Rainfall'),
+            row.get('Humidity9am'),
+            row.get('Humidity3pm'),
+            row.get('Pressure9am'),
+            row.get('Pressure3pm'),
+            row.get('WindSpeed9am'),
+            row.get('WindSpeed3pm'),
+            row.get('WindDir9am'),
+            row.get('WindDir3pm'),
+            row.get('Cloud9am'),
+            row.get('Cloud3pm'),
+            row.get('Temp9am'),
+            row.get('Temp3pm'),
+            True if row.get('RainToday') == 'Yes' else False,
+            True if row.get('RainTomorrow') == 'Yes' else False
         ))
         # Insert in batches
         if len(weather_data) >= chunk_size:
             cur.executemany("""
-                INSERT INTO weather_observations (location_id, date, min_temp, max_temp, rainfall)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO weather_observations (location_id, date, min_temp, max_temp, rainfall, 
+                humidity_9am, humidity_3pm, pressure_9am, pressure_3pm, wind_speed_9am, wind_speed_3pm, 
+                wind_dir_9am, wind_dir_3pm, cloud_9am, cloud_3pm, temp_9am, temp_3pm, rain_today, rain_tomorrow)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, weather_data)
             conn.commit()
             print(f"Inserted {idx+1} rows into PostgreSQL...")
@@ -58,8 +74,10 @@ def import_to_postgres(df):
     # Insert any remaining data
     if weather_data:
         cur.executemany("""
-            INSERT INTO weather_observations (location_id, date, min_temp, max_temp, rainfall)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO weather_observations (location_id, date, min_temp, max_temp, rainfall, 
+            humidity_9am, humidity_3pm, pressure_9am, pressure_3pm, wind_speed_9am, wind_speed_3pm, 
+            wind_dir_9am, wind_dir_3pm, cloud_9am, cloud_3pm, temp_9am, temp_3pm, rain_today, rain_tomorrow)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, weather_data)
         conn.commit()
     cur.close()
@@ -88,7 +106,21 @@ def import_to_mongo(df):
             'date': datetime.strptime(row['Date'], '%Y-%m-%d'),
             'min_temp': row.get('MinTemp'),
             'max_temp': row.get('MaxTemp'),
-            'rainfall': row.get('Rainfall')
+            'rainfall': row.get('Rainfall'),
+            'humidity_9am': row.get('Humidity9am'),
+            'humidity_3pm': row.get('Humidity3pm'),
+            'pressure_9am': row.get('Pressure9am'),
+            'pressure_3pm': row.get('Pressure3pm'),
+            'wind_speed_9am': row.get('WindSpeed9am'),
+            'wind_speed_3pm': row.get('WindSpeed3pm'),
+            'wind_dir_9am': row.get('WindDir9am'),
+            'wind_dir_3pm': row.get('WindDir3pm'),
+            'cloud_9am': row.get('Cloud9am'),
+            'cloud_3pm': row.get('Cloud3pm'),
+            'temp_9am': row.get('Temp9am'),
+            'temp_3pm': row.get('Temp3pm'),
+            'rain_today': row.get('RainToday') == 'Yes',
+            'rain_tomorrow': row.get('RainTomorrow') == 'Yes'
         }
         obs_docs.append(obs_doc)
         if len(obs_docs) >= chunk_size:
@@ -100,6 +132,7 @@ def import_to_mongo(df):
     client.close()
 
 if __name__ == '__main__':
+    # Skip PostgreSQL since it's already done
     import_to_postgres(df)
     import_to_mongo(df)
     print('Data import complete!')

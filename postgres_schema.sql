@@ -13,7 +13,20 @@ CREATE TABLE weather_observations (
   , min_temp FLOAT
   , max_temp FLOAT
   , rainfall FLOAT
-  -- add more columns as needed
+  , humidity_9am FLOAT
+  , humidity_3pm FLOAT
+  , pressure_9am FLOAT
+  , pressure_3pm FLOAT
+  , wind_speed_9am FLOAT
+  , wind_speed_3pm FLOAT
+  , wind_dir_9am VARCHAR(10)
+  , wind_dir_3pm VARCHAR(10)
+  , cloud_9am FLOAT
+  , cloud_3pm FLOAT
+  , temp_9am FLOAT
+  , temp_3pm FLOAT
+  , rain_today BOOLEAN
+  , rain_tomorrow BOOLEAN
 );
 
 CREATE TABLE rain_predictions (
