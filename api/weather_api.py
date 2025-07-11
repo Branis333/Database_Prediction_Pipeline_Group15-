@@ -257,7 +257,7 @@ def read_observation(observation_id: int):
 @app.put("/observations/{observation_id}", response_model=Observation)
 def update_observation(observation_id: int, obs: ObservationBase):
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)  # Use RealDictCursor to get dictionary results
     cur.execute("""
         UPDATE weather_observations SET
             location_id=%s, date=%s, min_temp=%s, max_temp=%s, rainfall=%s,
@@ -280,7 +280,7 @@ def update_observation(observation_id: int, obs: ObservationBase):
     conn.close()
     if not row:
         raise HTTPException(status_code=404, detail="Observation not found")
-    return Observation(**row)
+    return Observation(**dict(row))
 
 @app.delete("/observations/{observation_id}", status_code=204)
 def delete_observation(observation_id: int):
