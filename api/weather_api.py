@@ -9,15 +9,21 @@ from pymongo import MongoClient
 from bson import ObjectId
 from pymongo.errors import PyMongoError
 from fastapi.exceptions import RequestValidationError
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # reads .env into os.environ
 
 # PostgreSQL connection settings
 PG_CONN = {
-    'host': 'aws-0-eu-central-1.pooler.supabase.com',
-    'port': 6543,
-    'dbname': 'postgres',
-    'user': 'postgres.fdmizgsixffqbpbjqdey',
-    'password': 'xZ5i6iLA7yZLsJNX'
+    'host': os.getenv('PG_HOST'),
+    'port': os.getenv('PG_PORT'),
+    'dbname': os.getenv('PG_DBNAME'),
+    'user': os.getenv('PG_USER'),
+    'password': os.getenv('PG_PASSWORD'),
 }
+MONGO_URI = os.getenv('MONGO_URI')
+MONGO_DB  = os.getenv('MONGO_DB')
 
 def get_db_connection():
     return psycopg2.connect(**PG_CONN)
@@ -89,8 +95,6 @@ class Prediction(PredictionBase):
     predicted_at: datetime
 
 # MongoDB connection settings
-MONGO_URI = 'mongodb://localhost:27017/'
-MONGO_DB = 'weather_db'
 client_mongo = MongoClient(MONGO_URI)
 db_mongo = client_mongo[MONGO_DB]
 
