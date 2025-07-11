@@ -1,9 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import date, datetime
+from pymongo import MongoClient
+from bson import ObjectId
+from pymongo.errors import PyMongoError
+from fastapi.exceptions import RequestValidationError
 
 # PostgreSQL connection settings
 PG_CONN = {
@@ -17,7 +22,31 @@ PG_CONN = {
 def get_db_connection():
     return psycopg2.connect(**PG_CONN)
 
-app = FastAPI(title="Weather CRUD API")
+app = FastAPI(title="Rainfall Prediction API")
+
+# Exception handlers for robust error handling
+@app.exception_handler(psycopg2.Error)
+async def postgres_exception_handler(request: Request, exc: psycopg2.Error):
+    return JSONResponse(status_code=500, content={"detail": "PostgreSQL error", "error": str(exc)})
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(status_code=500, content={"detail": "Internal server error", "error": str(exc)})
+
+# Handle HTTPException separately to preserve status codes
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+# MongoDB error handler
+@app.exception_handler(PyMongoError)
+async def mongo_exception_handler(request: Request, exc: PyMongoError):
+    return JSONResponse(status_code=500, content={"detail": "MongoDB error", "error": str(exc)})
+
+# Validation errors handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": exc.errors(), "body": exc.body})
 
 # Pydantic models
 class LocationBase(BaseModel):
@@ -57,6 +86,46 @@ class PredictionBase(BaseModel):
 
 class Prediction(PredictionBase):
     prediction_id: int
+    predicted_at: datetime
+
+# MongoDB connection settings
+MONGO_URI = 'mongodb://localhost:27017/'
+MONGO_DB = 'weather_db'
+client_mongo = MongoClient(MONGO_URI)
+db_mongo = client_mongo[MONGO_DB]
+
+# Pydantic models for MongoDB
+class MongoLocation(BaseModel):
+    id: str
+    name: str
+    state: Optional[str] = None
+
+class MongoObservation(BaseModel):
+    id: str
+    location_id: str
+    date: datetime
+    min_temp: Optional[float] = None
+    max_temp: Optional[float] = None
+    rainfall: Optional[float] = None
+    humidity_9am: Optional[float] = None
+    humidity_3pm: Optional[float] = None
+    pressure_9am: Optional[float] = None
+    pressure_3pm: Optional[float] = None
+    wind_speed_9am: Optional[float] = None
+    wind_speed_3pm: Optional[float] = None
+    wind_dir_9am: Optional[str] = None
+    wind_dir_3pm: Optional[str] = None
+    cloud_9am: Optional[float] = None
+    cloud_3pm: Optional[float] = None
+    temp_9am: Optional[float] = None
+    temp_3pm: Optional[float] = None
+    rain_today: Optional[bool] = None
+    rain_tomorrow: Optional[bool] = None
+
+class MongoPrediction(BaseModel):
+    id: str
+    observation_id: str
+    will_it_rain: bool
     predicted_at: datetime
 
 # CRUD endpoints for Locations
@@ -287,3 +356,133 @@ def delete_prediction(prediction_id: int):
     conn.commit()
     cur.close()
     conn.close()
+
+# CRUD endpoints for MongoDB Locations
+@app.post("/mongo/locations/", response_model=MongoLocation)
+def create_mongo_location(loc: LocationBase):
+    result = db_mongo.locations.insert_one(loc.dict())
+    return MongoLocation(id=str(result.inserted_id), **loc.dict())
+
+@app.get("/mongo/locations/", response_model=List[MongoLocation])
+def read_mongo_locations():
+    docs = db_mongo.locations.find()
+    return [MongoLocation(id=str(d["_id"]), name=d["name"], state=d.get("state")) for d in docs]
+
+@app.get("/mongo/locations/{loc_id}", response_model=MongoLocation)
+def read_mongo_location(loc_id: str):
+    try:
+        doc = db_mongo.locations.find_one({"_id": ObjectId(loc_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if not doc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return MongoLocation(id=str(doc["_id"]), name=doc["name"], state=doc.get("state"))
+
+@app.put("/mongo/locations/{loc_id}", response_model=MongoLocation)
+def update_mongo_location(loc_id: str, loc: LocationBase):
+    try:
+        res = db_mongo.locations.update_one({"_id": ObjectId(loc_id)}, {"$set": loc.dict()})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Location not found")
+    doc = db_mongo.locations.find_one({"_id": ObjectId(loc_id)})
+    return MongoLocation(id=str(doc["_id"]), name=doc["name"], state=doc.get("state"))
+
+@app.delete("/mongo/locations/{loc_id}", status_code=204)
+def delete_mongo_location(loc_id: str):
+    try:
+        res = db_mongo.locations.delete_one({"_id": ObjectId(loc_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+# CRUD endpoints for MongoDB Observations
+@app.post("/mongo/observations/", response_model=MongoObservation)
+def create_mongo_observation(obs: ObservationBase):
+    data = obs.dict()
+    # cast date to datetime
+    data["date"] = obs.date
+    result = db_mongo.weather_observations.insert_one(data)
+    return MongoObservation(id=str(result.inserted_id), **data)
+
+@app.get("/mongo/observations/", response_model=List[MongoObservation])
+def read_mongo_observations():
+    docs = db_mongo.weather_observations.find()
+    return [MongoObservation(id=str(d["_id"]), **{k: d.get(k) for k in ObservationBase.__fields__}) for d in docs]
+
+@app.get("/mongo/observations/{obs_id}", response_model=MongoObservation)
+def read_mongo_observation(obs_id: str):
+    try:
+        doc = db_mongo.weather_observations.find_one({"_id": ObjectId(obs_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if not doc:
+        raise HTTPException(status_code=404, detail="Observation not found")
+    return MongoObservation(id=str(doc["_id"]), **{k: doc.get(k) for k in ObservationBase.__fields__})
+
+@app.put("/mongo/observations/{obs_id}", response_model=MongoObservation)
+def update_mongo_observation(obs_id: str, obs: ObservationBase):
+    data = obs.dict()
+    try:
+        res = db_mongo.weather_observations.update_one({"_id": ObjectId(obs_id)}, {"$set": data})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Observation not found")
+    doc = db_mongo.weather_observations.find_one({"_id": ObjectId(obs_id)})
+    return MongoObservation(id=str(doc["_id"]), **{k: doc.get(k) for k in ObservationBase.__fields__})
+
+@app.delete("/mongo/observations/{obs_id}", status_code=204)
+def delete_mongo_observation(obs_id: str):
+    try:
+        res = db_mongo.weather_observations.delete_one({"_id": ObjectId(obs_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Observation not found")
+
+# CRUD endpoints for MongoDB Predictions
+@app.post("/mongo/predictions/", response_model=MongoPrediction)
+def create_mongo_prediction(pred: PredictionBase):
+    data = pred.dict()
+    data["predicted_at"] = datetime.utcnow()
+    result = db_mongo.rain_predictions.insert_one(data)
+    return MongoPrediction(id=str(result.inserted_id), **data)
+
+@app.get("/mongo/predictions/", response_model=List[MongoPrediction])
+def read_mongo_predictions():
+    docs = db_mongo.rain_predictions.find()
+    return [MongoPrediction(id=str(d["_id"]), observation_id=str(d.get("observation_id")), will_it_rain=d.get("will_it_rain"), predicted_at=d.get("predicted_at")) for d in docs]
+
+@app.get("/mongo/predictions/{pred_id}", response_model=MongoPrediction)
+def read_mongo_prediction(pred_id: str):
+    try:
+        doc = db_mongo.rain_predictions.find_one({"_id": ObjectId(pred_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if not doc:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    return MongoPrediction(id=str(doc["_id"]), observation_id=str(doc.get("observation_id")), will_it_rain=doc.get("will_it_rain"), predicted_at=doc.get("predicted_at"))
+
+@app.put("/mongo/predictions/{pred_id}", response_model=MongoPrediction)
+def update_mongo_prediction(pred_id: str, pred: PredictionBase):
+    data = pred.dict()
+    try:
+        res = db_mongo.rain_predictions.update_one({"_id": ObjectId(pred_id)}, {"$set": data})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    doc = db_mongo.rain_predictions.find_one({"_id": ObjectId(pred_id)})
+    return MongoPrediction(id=str(doc["_id"]), observation_id=str(doc.get("observation_id")), will_it_rain=doc.get("will_it_rain"), predicted_at=doc.get("predicted_at"))
+
+@app.delete("/mongo/predictions/{pred_id}", status_code=204)
+def delete_mongo_prediction(pred_id: str):
+    try:
+        res = db_mongo.rain_predictions.delete_one({"_id": ObjectId(pred_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Prediction not found")
