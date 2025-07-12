@@ -1,4 +1,4 @@
-// Weather Database Configuration for Production
+// Weather Database Configuration
 
 // Database creation and user setup (run as admin)
 db = db.getSiblingDB('weather_db');
