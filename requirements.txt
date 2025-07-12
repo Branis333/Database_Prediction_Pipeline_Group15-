@@ -3,3 +3,6 @@ psycopg2-binary
 pymongo
 fastapi
 uvicorn
+python-dotenv
+pydantic
+starlette
