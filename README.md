@@ -133,7 +133,7 @@ python verify_migration.py  # Verify the migration
 
 ![Weather ERD][imageRef]
 
-[imageRef]: docs\Untitled.png
+[imageRef]: docs/Untitled.png
 
 
 **Author:** Group 15
