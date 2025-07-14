@@ -211,17 +211,6 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 **Challenge**: Handling intermittent or failed connections to either database  
 **Solution**: Added robust error handling and connection retries in `api/database.py`, ensuring reliability in production  
 
----
-
-## Lessons Learned
-
-**From Task 1**:
-- Dual-database systems require strong planning for synchronization and consistency  
-- JSON schema validation in MongoDB is essential for maintaining data integrity  
-- Automating import and migration reduces human error and improves scalability  
-- A well-structured `.env` and connection manager improves maintainability and security  
-- Documentation like ERDs and schema examples help streamline onboarding and development  
-
 
 ### Task 2 Specific Challenges:
 1. **Database Connection Management**
