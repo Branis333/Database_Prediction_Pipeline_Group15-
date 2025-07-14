@@ -85,8 +85,47 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 - Achieved 100% CRUD functionality coverage
 
 ### Task 3 - Machine Learning Integration
-**Team Member:** [Name]
-[To be filled by team member responsible for Task 3]
+**Team Member:** Nicolas Muhigi
+**Role:** Create a Script to Fetch Data for Prediction
+#### Contributions
+1. **Model Training & Saving**
+   - Trained a Random Forest Classifier using relevant weather features
+   - Preprocessed the dataset to handle missing values and encoded the target 
+   - Split data into training and testing sets 
+   - Saved trained model using joblib for future inference
+
+2. **Prediction Script Development**
+- Developed a Python script predict_latest.py to:
+  - Fetch the most recent observation data from FastAPI MongoDB endpoint
+  - Preprocess the data into a structured format for ML model
+  - Load the trained model and perform inference
+  - Print the predicted class (rain or not) and probability
+ 
+3. **Integration with FastAPI**
+   - Integrated the script with the FastAPI server to fetch live data
+   - Aligned the model's expected input features with API schema fields
+   - Added fallback logic for missing or incomplete API response
+
+### Technical Details
+**Model Training (train_model.py):**
+- Algorithm: RandomForestClassifier from scikit-learn
+- Features: ["Rainfall", "MaxTemp", "MinTemp", "Humidity9am", "Humidity3pm"]
+- Target: Encoded "RainTomorrow" column
+- Preprocessing:
+  - Dropped rows with missing critical values
+  - Used LabelEncoder for binary label encoding
+- Output: rain_predictor.pkl saved in /data directory
+  
+**Prediction Script (predict_latest.py):**
+- API Call: ```GET http://127.0.0.1:8000/mongo/observations/ ```
+- Model Inference: ```model.predict(input_df)```, ```model.predict_proba(input_df)```
+- Output: ```🌧️ Will it rain tomorrow? Yes/No```, ```💧 Probability of rain: XX.XX%```
+
+### Key Achievements
+- Seamlessly automated the ML prediction process from API to inference
+- Enabled real-time decision making using live data
+- Maintained feature consistency between training and prediction pipelines
+- Created a reusable script that can be extended to store predictions or trigger alerts
 
 ## Challenges and Solutions
 
@@ -102,6 +141,19 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 3. **Error Handling**
    - **Challenge:** Providing meaningful error messages
    - **Solution:** Implemented custom exception handlers and proper HTTP status codes
+  
+### Task 3 Specific Challenges:
+1. **API Data Reliability:**
+   - **Challenge:** API could return ```null``` or incomplete fields
+   - **Solution:** Solution: Implemented fallback defaults ```(0)``` to ensure prediction does not break
+
+2. **Model Input Format**
+   - **Challenge:** Ensuring input format matches the model’s training structure
+   - **Solution:** Used consistent feature order and names in both training and inference scripts
+
+3. **Model Path Portability**
+   - **Challenge:** File path inconsistency across environments
+   - **Solution:** Used ```os.path.join``` to ensure path compatibility
 
 ## Lessons Learned
 
@@ -110,6 +162,14 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 2. The value of type hints in Python
 3. The benefits of using modern frameworks like FastAPI
 4. The significance of proper error handling in APIs
+
+## From Task 3:
+1. Importance of aligning model training features with API data structures
+2. Real-world data often contains inconsistencies that must be handled programmatically
+3. ML models are only as useful as the reliability of the pipeline that surrounds them
+4. Automating predictions builds a foundation for decision intelligence in web apps
+
+
 
 ## Future Improvements
 
@@ -120,3 +180,6 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 4. Implement rate limiting
 5. Add authentication and authorization
 
+### Model Enhancements (Task 3):
+1. Integrate model monitoring to track accuracy drift over time
+2. Allow user input for ad-hoc predictions via a frontend or API
