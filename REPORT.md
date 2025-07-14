@@ -10,8 +10,68 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 ## Team Contributions
 
 ### Task 1 - Database Setup and Schema Design
-**Team Member:** [Name]
-[To be filled by team member responsible for Task 1]
+# Task 1 - Database Setup and Schema Design
+**Team Member:** Branis  
+**Role:** Data Infrastructure & Database Lead
+
+---
+
+## Contributions
+
+### Dual Database Architecture
+
+- Designed a hybrid database system integrating **PostgreSQL** (via **Supabase**) for structured data and **MongoDB** for flexible document storage.
+- Defined relational schema for **locations**, **observations**, and **predictions**.
+- Created MongoDB collections with **schema validation** and **indexes**.
+
+### Schema Documentation & Management
+
+- Developed an **Entity-Relationship Diagram (ERD)** using `weather_erd.dbml` for the PostgreSQL structure.
+- Provided **JSON schema definitions** in `mongodb_collections_example.js` for MongoDB collections.
+- Ensured **data consistency** between both databases.
+
+### Data Import & Migration Tools
+
+- Created `import_weather_data.py` to load large weather datasets from CSV into both databases with **chunked processing**.
+- Wrote `migrate_to_mongodb.py` and `verify_migration.py` to handle **cross-database migration** and **verification**.
+
+### Environment Configuration
+
+- Designed a `.env.example` template and configured **environment variables** for database connections.
+- Added robust **database connection handling** in `api/database.py`.
+
+---
+
+## Technical Details
+
+### PostgreSQL (Relational)
+
+- **Tables**: Locations, WeatherObservations, RainPredictions
+- **Tools**: Supabase, pgAdmin, dbml format for ERD
+- **Constraints**: Primary keys, foreign keys, NOT NULL checks
+
+### MongoDB (NoSQL)
+
+- **Collections**: locations, observations, predictions
+- **Tools**: MongoDB Compass, PyMongo
+- **Features**: JSON schema validation, custom indexes for performance
+
+---
+
+## Scripts and Config Files
+
+- `import_weather_data.py`: Efficient CSV import into both databases
+- `mongodb_collections_example.js`: MongoDB schema and index setup
+- `verify_migration.py`: Compares PostgreSQL and MongoDB data for consistency
+
+---
+
+## Key Achievements
+
+- Successfully set up a **dual-database architecture**
+- Automated **import and migration processes**
+- Ensured **schema validation** and **data consistency** across systems
+- Created robust **database initialization and verification tools**
 
 ### Task 2 - FastAPI CRUD Implementation
 **Team Member:** Abiodun
