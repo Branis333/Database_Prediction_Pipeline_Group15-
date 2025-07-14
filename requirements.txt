@@ -1,8 +1,26 @@
-pandas
-psycopg2-binary
-pymongo
-fastapi
-uvicorn
-python-dotenv
-pydantic
-starlette
+# Core Data Processing
+pandas>=2.3.1
+numpy>=2.0.2
+scikit-learn
+joblib
+
+# Database Connectors
+psycopg2-binary>=2.9.10
+pymongo>=4.13.2
+
+# API Framework
+fastapi>=0.116.1
+uvicorn>=0.35.0
+starlette>=0.47.1
+pydantic>=2.11.7
+
+# HTTP Client
+requests
+
+# Environment and Configuration
+python-dotenv>=1.1.1
+
+# Dependencies
+python-dateutil>=2.9.0
+typing-extensions>=4.14.1
+dnspython>=2.7.0  # Required for MongoDB
