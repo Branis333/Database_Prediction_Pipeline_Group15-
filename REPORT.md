@@ -10,7 +10,7 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 ## Team Contributions
 
 ### Task 1 - Database Setup and Schema Design
-# Task 1 - Database Setup and Schema Design
+
 **Team Member:** Branis  
 **Role:** Data Infrastructure & Database Lead
 
@@ -189,6 +189,40 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 
 ## Challenges and Solutions
 
+### Task 1 Specific Challenges:
+
+#### Dual Database Synchronization  
+**Challenge**: Keeping PostgreSQL and MongoDB in sync during imports and migrations  
+**Solution**: Created migration and verification scripts (`migrate_to_mongodb.py`, `verify_migration.py`) to compare and validate consistency across both databases after each import  
+
+#### Schema Consistency  
+**Challenge**: Ensuring consistent schema across SQL (strict) and NoSQL (flexible) environments  
+**Solution**: Applied JSON schema validation for MongoDB collections and enforced constraints like `NOT NULL` and foreign keys in PostgreSQL  
+
+#### Large Dataset Import  
+**Challenge**: Importing and processing large CSV files without exhausting memory  
+**Solution**: Implemented chunked processing in `import_weather_data.py` to handle data in manageable batches  
+
+#### Environment & Credential Management  
+**Challenge**: Managing secure and environment-specific configurations across local/dev/prod  
+**Solution**: Created `.env.example` and used environment variables in all config files for secure and consistent setup  
+
+#### Database Connection Reliability  
+**Challenge**: Handling intermittent or failed connections to either database  
+**Solution**: Added robust error handling and connection retries in `api/database.py`, ensuring reliability in production  
+
+---
+
+## Lessons Learned
+
+**From Task 1**:
+- Dual-database systems require strong planning for synchronization and consistency  
+- JSON schema validation in MongoDB is essential for maintaining data integrity  
+- Automating import and migration reduces human error and improves scalability  
+- A well-structured `.env` and connection manager improves maintainability and security  
+- Documentation like ERDs and schema examples help streamline onboarding and development  
+
+
 ### Task 2 Specific Challenges:
 1. **Database Connection Management**
    - **Challenge:** Maintaining efficient database connections for multiple requests
@@ -217,6 +251,11 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 
 ## Lessons Learned
 
+### From Task 1:
+1. Dual-database systems require strong planning for synchronization and consistency
+2. JSON schema validation in MongoDB is essential for maintaining data integrity  
+3. Automating import and migration reduces human error and improves scalability  
+
 ### From Task 2:
 1. The importance of proper API documentation
 2. The value of type hints in Python
@@ -232,6 +271,11 @@ Our team successfully implemented a comprehensive weather prediction pipeline th
 
 
 ## Future Improvements
+
+### Database Enhancements (Task 1):
+1. Implement real-time syncing service between PostgreSQL and MongoDB
+2. Add backup scripts for both databases to support disaster recovery  
+3. Optimize indexing in MongoDB and PostgreSQL for complex queries and forecasting  
 
 ### API Enhancements (Task 2):
 1. Add pagination for list endpoints
